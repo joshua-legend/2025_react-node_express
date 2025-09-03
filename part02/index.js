@@ -2,6 +2,12 @@ const menu = require("./data.js");
 const coffeeMenu = require("./data1.js");
 const express = require("express");
 const app = express();
+
+const banana = (req, res, next) => {
+  console.log("바나나실행");
+  next();
+};
+app.use(banana);
 app.use(express.json()); // JSON 형식 읽는 로직 추가!
 app.use(express.urlencoded({ extended: true })); // HTML form 방식 읽기 허락
 
