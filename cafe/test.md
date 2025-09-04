@@ -8,7 +8,7 @@
 - 메뉴 삭제: delete /menus
 - 메뉴 수정: put /menus
 
-  2.직원 관리
+2.직원 관리
 
 - 직원 스키마: {name:string, age:number, position:string}
 - 직원 조회: get /staffs
