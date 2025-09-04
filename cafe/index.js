@@ -1,16 +1,21 @@
-const { menus, staffs, positionType } = require("./data.js");
+const { positionType } = require("./data.js");
 const { validateNumber } = require("./util.js");
 const { makeReponseGetOK, makeReponsePostOK, makeReponsePutOk, makeReponseError, makeReponseDeleteOk } = require("./format.js");
 const express = require("express");
+const { createClient } = require("@supabase/supabase-js");
+const URL = "https://kmhyilcpctqpgwqrnyhq.supabase.co";
+const supabase = createClient(URL, KEY);
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/menus", (req, res) => {
-  res.json(makeReponseGetOK(menus));
+app.get("/menus", async (req, res) => {
+  const { data } = await supabase.from("menus").select("*");
+  res.json(makeReponseGetOK(data));
 });
 
-app.post("/menus", (req, res) => {
+app.post("/menus", async (req, res) => {
   const { name, price, kcal } = req.body;
   if (!name) {
     return res.json(makeReponseError("name이 빈값 입니다."));
@@ -21,24 +26,25 @@ app.post("/menus", (req, res) => {
   if (validateNumber(kcal)) {
     return res.json(makeReponseError("kcal의 데이터가 유효하지 않습니다."));
   }
-  menus.push({ name, price: +price, kcal: +kcal });
-  res.json(makeReponsePostOK(`${name} 메뉴가 등록되었습니다.`));
+  const { statusText } = await supabase.from("menus").insert({ name, price: +price, kcal: +kcal });
+  res.json(makeReponsePostOK(`${statusText}`));
 });
 
-app.delete("/menus/:id", (req, res) => {
+app.delete("/menus/:id", async (req, res) => {
   const { id } = req.params; // id 가져오기
-  const data = menus[+id - 1]; // id번째 메뉴 가져오고 data에 변수 넣기
-  !data && res.json(makeReponseError(`${id}번째의 메뉴는 존재하지 않습니다.`));
-
-  menus.splice(+id - 1, 1);
-  res.json(makeReponseDeleteOk(`${data.name}은 삭제되었습니다.`));
+  const { data } = await supabase.from("menus").select("*");
+  const target = data.find((v) => v.id == +id);
+  !target && res.json(makeReponseError(`${id}번째의 메뉴는 존재하지 않습니다.`));
+  const { statusText } = await supabase.from("menus").delete().eq("id", +id);
+  res.json(makeReponseDeleteOk(`${statusText}`));
 });
 
-app.put("/menus/:id", (req, res) => {
+app.put("/menus/:id", async (req, res) => {
   const { id } = req.params;
   const { name, price, kcal } = req.body;
-  const data = menus[+id - 1]; // id번째 메뉴 가져오고 data에 변수 넣기
-  if (!data) {
+  const { data } = await supabase.from("menus").select("*");
+  const target = data.find((v) => v.id == +id);
+  if (!target) {
     return res.json(makeReponseError(`${id}번째의 메뉴는 존재하지 않습니다.`));
   }
   if (!name) {
@@ -50,18 +56,16 @@ app.put("/menus/:id", (req, res) => {
   if (validateNumber(kcal)) {
     return res.json(makeReponseError("kcal의 데이터가 유효하지 않습니다."));
   }
-
-  menus[+id - 1].name = name;
-  menus[+id - 1].price = price;
-  menus[+id - 1].kcal = kcal;
-  res.json(makeReponsePutOk(`메뉴 ${name}이 수정되었습니다.`));
+  const { statusText } = await supabase.from("menus").update({ name, price: +price, kcal: +kcal }).eq("id", id);
+  res.json(makeReponsePutOk(`${statusText}`));
 });
 
-app.get("/staffs", (req, res) => {
-  res.json(makeReponseGetOK(staffs));
+app.get("/staffs", async (req, res) => {
+  const { data } = await supabase.from("staffs").select("*");
+  res.json(makeReponseGetOK(data));
 });
 
-app.post("/staffs", (req, res) => {
+app.post("/staffs", async (req, res) => {
   const { name, age, position } = req.body;
   if (!name) {
     return res.json(makeReponseError("name이 빈값 입니다."));
@@ -72,26 +76,26 @@ app.post("/staffs", (req, res) => {
   if (!positionType.includes(position)) {
     return res.json(makeReponseError(`그런 ${position}은 없습니다.`));
   }
-  staffs.push({ name, age: +age, position });
-  res.json(makeReponsePostOK(`${name} 스태프가 등록되었습니다.`));
+  const { statusText } = await supabase.from("staffs").insert({ name, age: +age, position });
+  res.json(makeReponsePostOK(`${statusText}`));
 });
 
-app.delete("/staffs/:id", (req, res) => {
+app.delete("/staffs/:id", async (req, res) => {
   const { id } = req.params; // id 가져오기
-  const data = staffs[+id - 1]; // id번째 메뉴 가져오고 data에 변수 넣기
-  if (!data) {
-    return res.json(makeReponseError(`${id}번째의 스태프는 존재하지 않습니다.`));
-  }
-  staffs.splice(+id - 1, 1);
-  res.json(makeReponseDeleteOk(`${data.name}은 삭제되었습니다.`));
+  const { data } = await supabase.from("staffs").select("*");
+  const target = data.find((v) => v.id == +id);
+  !target && res.json(makeReponseError(`${id}번째의 스태프는 존재하지 않습니다.`));
+  const { statusText } = await supabase.from("staffs").delete().eq("id", +id);
+  res.json(makeReponseDeleteOk(`${statusText}`));
 });
 
-app.put("/staffs/:id", (req, res) => {
+app.put("/staffs/:id", async (req, res) => {
   const { id } = req.params;
   const { name, age, position } = req.body;
-  const data = staffs[+id - 1]; // id번째 메뉴 가져오고 data에 변수 넣기
-  if (!data) {
-    return res.json(makeReponseError(`${id}번째의 메뉴는 존재하지 않습니다.`));
+  const { data } = await supabase.from("menus").select("*");
+  const target = data.find((v) => v.id == +id);
+  if (!target) {
+    return res.json(makeReponseError(`${id}번째의 스태프는 존재하지 않습니다.`));
   }
   if (!name) {
     return res.json(makeReponseError("name이 빈값 입니다."));
@@ -102,11 +106,8 @@ app.put("/staffs/:id", (req, res) => {
   if (!positionType.includes(position)) {
     return res.json(makeReponseError(`그런 ${position}은 존재하지 않습니다.`));
   }
-
-  staffs[+id - 1].name = name;
-  staffs[+id - 1].age = age;
-  staffs[+id - 1].position = position;
-  res.json(makeReponsePutOk(`스태프 ${name}이 수정되었습니다.`));
+  const { statusText } = await supabase.from("staffs").update({ name, age: +age, position }).eq("id", id);
+  res.json(makeReponsePutOk(`${statusText}`));
 });
 
 app.listen(3000, () => {
